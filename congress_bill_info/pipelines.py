@@ -62,7 +62,10 @@ class CongressBillInfoPipeline(object):
                                   amdt_id = item['amdt_id'],
                                   bill_title = item['bill_title'],
                                   bill_summary = item['bill_summary'],
-                                  sponsor_id = item['sponsor_id'],
+                                  sponsor_fn = item['sponsor_fn'],
+                                  sponsor_ln = item['sponsor_ln'],
+                                  sponsor_state = item['sponsor_state'],
+                                  sponsor_party = item['sponsor_party'],
                                   bill_url = item['bill_url'])
                 print("We published! WOOOO!")
                 
@@ -113,8 +116,11 @@ class BillCosponsorsPipeline(object):
                 print("The topic was built!")
                 publisher.publish(topic_path, data=data,
                                   bill_id = item['bill_id'],
-                                  amdt_id = item['amdt_id'],
-                                  cosponsor_id = item['cosponsor_id'],
+                                  amdt_id = item['amdt_id'],                                  
+                                  sponsor_fn = item['sponsor_fn'],
+                                  sponsor_ln = item['sponsor_ln'],
+                                  sponsor_state = item['sponsor_state'],
+                                  sponsor_party = item['sponsor_party'],
                                   cosponsor_info = item['cosponsor_info'])
                 print("We published! WOOOO!")
                 return item;
