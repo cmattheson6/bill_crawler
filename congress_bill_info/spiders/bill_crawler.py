@@ -6,9 +6,6 @@ import scrapy # for scraping
 import re
 import unidecode
 
-import sys # for exiting the fxn
-import pandas as pd # for dataframes
-
 ### -------- Start of the spider -------- ###
 
 class BillCrawlerSpider(scrapy.Spider):
