@@ -30,8 +30,9 @@ def create_bill_dict(b): #inputs raw bill info
     if b.count('to') > 0: 
         bill_id = b[0:b.index("to")].replace(" ", "").replace(".", "")
         amdt_id = b[b.index("to")+1:len(b)].strip()
-        bill_title = b # NO. 2 THING TO DO TOMORROW***
-        bill_sec_title = response.xpath(".//div[@class='overview_wrapper bill']/overview/table/tbody/tr"
+        bill_title = b
+        bill_sec_title = response.xpath(".//table[@class='standard01']/tr/td/text()").extract()
+        bill_title = bill_title + bill_sec_title
         bill_dict = {'bill_id': bill_id,
                      'amdt_id': amdt_id,
                      'bill_title': bill_title}
@@ -89,8 +90,7 @@ class BillCrawlerSpider(scrapy.Spider):
         # Parses out all of the bill info from the page
         bill_info = response.xpath(".//h1[@class='legDetail']/text()").extract_first()
         bill_info = create_bill_dict(bill_info)
-        sponsor_info = response.xpath(".//table[@class='standard01']/tr/td/a/text()").extract_first() # *** NO. 1 THING TO DO TOMORROW
-                                        # THIS NEEDS TO BE FIXED; IT WILL NOT WORK FOR AMENDMENTS.
+        sponsor_info = response.xpath(".//table[@class='standard01']/tr/td/a/text()").re_first(r'^.*\[.*\]$')
         bill_summary = response.xpath(".//div[@id='bill-summary']/p/text()").extract_first()
         
         bill_id = bill_info['bill_id']
