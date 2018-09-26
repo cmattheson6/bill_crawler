@@ -4,11 +4,12 @@
 import scrapy # for scraping
 # For matching characters
 import re
-import unidecode
+import unidecode # MAKE SURE THAT ALL FILES ARE ACTUALLY HERE *** NO. 3 THING TO DO TOMORROW
 
 ### -------- Define all custom fxns here -------- ###
 
 # Pull from a raw string the relevant info on a politician (first name, last name, party, state)
+
 def create_pol_dict(pol):
     regex = '[^a-zA-Z]'
     pol_fn = pol[pol.index(",")+1:pol.index("[")].strip()
@@ -29,7 +30,8 @@ def create_bill_dict(b): #inputs raw bill info
     if b.count('to') > 0: 
         bill_id = b[0:b.index("to")].replace(" ", "").replace(".", "")
         amdt_id = b[b.index("to")+1:len(b)].strip()
-        bill_title = b
+        bill_title = b # NO. 2 THING TO DO TOMORROW***
+        bill_sec_title = response.xpath(".//div[@class='overview_wrapper bill']/overview/table/tbody/tr"
         bill_dict = {'bill_id': bill_id,
                      'amdt_id': amdt_id,
                      'bill_title': bill_title}
@@ -63,28 +65,44 @@ class BillCrawlerSpider(scrapy.Spider):
         for u in bill_urls:
             url = u[0:re.search(r'\?', u).start()]
             # The loop should stop here based on if the date provided was not from yesterday
-            if 'criteria' > 1: ### REVISE HERE
-                print('URL in list. All new bills have been uploaded.')
-                break
-            else:
-                yield scrapy.Request(url = url,
-                                     callback = self.parse_bill);
+#             bill_date = ''
+#             if bill_date > datetime.timedelta(days = 1): ### REVISE HERE
+#                 print('URL in list. All new bills have been uploaded.')
+#                 break
+#             else:
+#                 yield scrapy.Request(url = url,
+#                                      callback = self.parse_bill);
+        
+#         # Because of the set-up of the site, this section should only be used once to build a full database the first time                                
+#         # Determine if there is a next page link, what that link is
+#         next_page = response.xpath(".//a[@class='next']/@href").extract_first()
+        
+#         # Follow the next_page link from the top of the spider if available
+#         if next_page is not None:
+#             next_page = response.urljoin(next_page)
+#             yield scrapy.Request(url = next_page,
+#                                  callback = self.parse)
+                                        
 
     # The second parse will pull out all of the bill's relevant information
     def parse_bill(self, response):
         # Parses out all of the bill info from the page
         bill_info = response.xpath(".//h1[@class='legDetail']/text()").extract_first()
-        sponsor_info = response.xpath(".//table[@class='standard01']/tr/td/a/text()").extract_first()
+        bill_info = create_bill_dict(bill_info)
+        sponsor_info = response.xpath(".//table[@class='standard01']/tr/td/a/text()").extract_first() # *** NO. 1 THING TO DO TOMORROW
+                                        # THIS NEEDS TO BE FIXED; IT WILL NOT WORK FOR AMENDMENTS.
         bill_summary = response.xpath(".//div[@id='bill-summary']/p/text()").extract_first()
         
-        bill_id = bill_info[0:bill_info.index("-")].replace(" ", "").replace(".", "")
-        bill_title = bill_info[bill_info.index("-")+1:len(bill_info)].strip()
+        bill_id = bill_info['bill_id']
+        amdt_id = bill_info['amdt_id']
+        bill_title = bill_info['bill_title']
 
         # Get all sponsor info parsed from raw info
         sponsor_info = create_pol_dict(sponsor_info)
 
         # Assign all parts of the bill to a dictionary for pipeline discovery        
-        bill_dict = {'bill_id':bill_id, 
+        bill_dict = {'bill_id': bill_id, 
+                     'amdt_id': amdt_id,
                      'bill_title': bill_title, 
                      'bill_summary': bill_summary,
                      'sponsor_fn': sponsor_info['first_name'],
@@ -99,28 +117,18 @@ class BillCrawlerSpider(scrapy.Spider):
         cosponsors_request = scrapy.Request(url = cosponsors_link, 
                                             callback = self.parse_cosponsors)
         # This generator needs to yield both the bill and a separate cosponsor request
-        # The two scrapes need to be separate
-        print(bill_dict) ###formula checkpoint       
+        # The two scrapes need to be separate     
         yield bill_dict
         yield cosponsors_request
-        
-        # Determine if there is a next page link, what that link is
-        next_page = response.xpath(".//a[@class='next']/@href").extract_first()
-        
-        # Follow the next_page link from the top of the spider if available
-        # DETERMINE WHERE THIS IS SUPPOSED TO GO
-        if next_page is not None:
-            next_page = response.urljoin(next_page)
-            yield scrapy.Request(url = next_page,
-                                 callback = self.parse)
     
     # Generates all cosponsors of the bill for a separate table
     def parse_cosponsors(self, response):
         # Parses out all cosponsor information
-        bill_info = response.xpath(".//h1[@class='legDetail']/text()").extract_first()       
+        bill_info = response.xpath(".//h1[@class='legDetail']/text()").extract_first()  
+        bill_info = create_bill_dict(bill_info)
         cosponsors_info = response.xpath(".//table[@class = 'item_table']/tbody/tr/td/a/text()").extract()
-        bill_id = bill_info[0:bill_info.index("-")].replace(" ", "").replace(".", "")
-        amdt_id = '' # FIX THIS
+        bill_id = bill_info['bill_id']
+        amdt_id = bill_info['amdt_id']
         cosponsors_info = (create_pol_dict(pol) for pol in cosponsors_info)
         # There may be multiple cosponsors, so a dictionary is generated for each cosponsor
         # Then uploaded individually
