@@ -10,6 +10,18 @@ import unidecode # MAKE SURE THAT ALL FILES ARE ACTUALLY HERE *** NO. 3 THING TO
 
 # Pull from a raw string the relevant info on a politician (first name, last name, party, state)
 
+# Find the location of needed character in a string
+def find_character(s, ch):
+    index_nums = []
+    index = 0
+    for x in s:
+        if x == ch:
+            index_nums.append(index)
+            index = index + 1
+        else:       
+            index = index + 1;
+    return index_nums;
+
 def create_pol_dict(pol):
     regex = '[^a-zA-Z]'
     pol_fn = pol[pol.index(",")+1:pol.index("[")].strip()
