@@ -33,8 +33,8 @@ def create_pol_dict(pol):
     elif s.count('-') == 1:
         pol_state = s[find_character(s, '-')+1:len(s)]
     else: Error
-    pol_dict = {'first_name': pol_first_name,
-                'last_name': pol_last_name,
+    pol_dict = {'first_name': pol_fn,
+                'last_name': pol_ln,
                 'party': pol_party,
                 'state': pol_state}
     return pol_dict;
