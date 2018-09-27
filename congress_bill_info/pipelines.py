@@ -7,6 +7,13 @@
 
 ### -------- Import all necessary modules -------- ###
 import scrapy
+from google.cloud import pubsub
+from google.oauth2 import service_account
+import subprocess
+import scrapy
+import scrapy.crawler
+from scrapy.utils.project import get_project_settings
+import google.auth
 
 ### -------- Start of the pipeline -------- ###
 
