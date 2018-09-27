@@ -67,15 +67,15 @@ class CongressBillInfoPipeline(object):
                 data = data.encode('utf-8')
                 print("The topic was built!")
                 publisher.publish(topic_path, data=data,
-                                  bill_id = item['bill_id'],
-                                  amdt_id = item['amdt_id'],
-                                  bill_title = item['bill_title'],
-                                  bill_summary = item['bill_summary'],
-                                  sponsor_fn = item['sponsor_fn'],
-                                  sponsor_ln = item['sponsor_ln'],
-                                  sponsor_state = item['sponsor_state'],
-                                  sponsor_party = item['sponsor_party'],
-                                  bill_url = item['bill_url'])
+                                  bill_id = str(item['bill_id']),
+                                  amdt_id = str(item['amdt_id']),
+                                  bill_title = str(item['bill_title']),
+                                  bill_summary = str(['bill_summary']),
+                                  sponsor_fn = str(item['sponsor_fn']),
+                                  sponsor_ln = str(item['sponsor_ln']),
+                                  sponsor_state = str(item['sponsor_state']),
+                                  sponsor_party = str(item['sponsor_party']),
+                                  bill_url = str(item['bill_url']))
                 print("We published! WOOOO!")
                 
                 return item
@@ -123,15 +123,15 @@ class BillCosponsorsPipeline(object):
                 project_id = 'politics-data-tracker-1'
                 topic_name = 'cosponsors'
                 topic_path = publisher.topic_path(project_id, topic_name)
-                data = u'This is a representative in the House.'
+                data = u'This is the cosponsors related to bill {0}.'.format(item['bill_id'])
                 data = data.encode('utf-8')
                 print("The topic was built!")
                 publisher.publish(topic_path, data=data,
-                                  bill_id = item['bill_id'],
-                                  amdt_id = item['amdt_id'],                                  
-                                  sponsor_fn = item['cosponsor_fn'],
-                                  sponsor_ln = item['cosponsor_ln'],
-                                  sponsor_state = item['cosponsor_state'],
-                                  sponsor_party = item['cosponsor_party'])
+                                  bill_id = str(item['bill_id']),
+                                  amdt_id = str(item['amdt_id']),                                  
+                                  sponsor_fn = str(item['cosponsor_fn']),
+                                  sponsor_ln = str(item['cosponsor_ln']),
+                                  sponsor_state = str(item['cosponsor_state']),
+                                  sponsor_party = str(item['cosponsor_party']))
                 print("We published! WOOOO!")
                 return item;
