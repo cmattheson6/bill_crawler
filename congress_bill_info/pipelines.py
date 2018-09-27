@@ -14,13 +14,17 @@ import scrapy
 class CongressBillInfoPipeline(object):
     # Uploads bill information to the database
     def process_item(self, item, spider):
-        bill_packet = (item.setdefault('bill_id', None), 
+        bill_packet = {item.setdefault('bill_id', None), 
+                       item.setdefault('amdt_id', None),
                        item.setdefault('bill_title', None), 
                        item.setdefault('bill_summary', None), 
-                       item.setdefault('sponsor_id', None), 
+                       item.setdefault('sponsor_fn', None), 
+                       item.setdefault('sponsor_ln', None), 
+                       item.setdefault('sponsor_party', None), 
+                       item.setdefault('sponsor_state', None), 
                        item.setdefault('bill_url', None))
         # Filters out any cosponsor items and only uploads bill items
-        if None in (list(bill_packet[i] for i in [0,1,3,4])):
+        if None in (list(bill_packet[i] for i in [0,1,3,4,5,6,7])):
             return item
         # Uploads bill items
         else:
@@ -77,11 +81,15 @@ class BillCosponsorsPipeline(object):
     # Builds and uploads query
     def process_item(self, item, spider):
         cosponsor_packet = (item.setdefault('bill_id', None),
-                            item.setdefault('cosponsor_id', None))
+                            item.setdefault('amdt_id', None),
+                            item.setdefault('cosponsor_fn', None),
+                            item.setdefault('cosponsor_ln', None),
+                            item.setdefault('cosponsor_party', None),
+                            item.setdefault('cosponsor_state', None))
         
         # Filters out all bill items
-        if None in cosponsor_packet:
-            pass
+        if None in cosponsor_packet[0,2,3,4,5]:
+            return item
         else:
                 cred_dict = {
                                  "auth_provider_x509_cert_url": spider.settings.get('auth_provider_x509_cert_url'),
@@ -109,7 +117,7 @@ class BillCosponsorsPipeline(object):
                      project_id='politics-data-tracker-1',
                      topic='cosponsors')
                 project_id = 'politics-data-tracker-1'
-                topic_name = 'house_pols'
+                topic_name = 'cosponsors'
                 topic_path = publisher.topic_path(project_id, topic_name)
                 data = u'This is a representative in the House.'
                 data = data.encode('utf-8')
@@ -117,10 +125,9 @@ class BillCosponsorsPipeline(object):
                 publisher.publish(topic_path, data=data,
                                   bill_id = item['bill_id'],
                                   amdt_id = item['amdt_id'],                                  
-                                  sponsor_fn = item['sponsor_fn'],
-                                  sponsor_ln = item['sponsor_ln'],
-                                  sponsor_state = item['sponsor_state'],
-                                  sponsor_party = item['sponsor_party'],
-                                  cosponsor_info = item['cosponsor_info'])
+                                  sponsor_fn = item['cosponsor_fn'],
+                                  sponsor_ln = item['cosponsor_ln'],
+                                  sponsor_state = item['cosponsor_state'],
+                                  sponsor_party = item['cosponsor_party'])
                 print("We published! WOOOO!")
                 return item;
