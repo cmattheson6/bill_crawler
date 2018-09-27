@@ -65,6 +65,8 @@ class BillCrawlerSpider(scrapy.Spider):
         print(bill_urls) ###formula checkpoint
         for u in bill_urls:
             url = u[0:re.search(r'\?', u).start()]
+            yield scrapy.Request(url = url,
+                         callback = self.parse_bill);
             # The loop should stop here based on if the date provided was not from yesterday
 #             bill_date = ''
 #             if bill_date > datetime.timedelta(days = 1): ### REVISE HERE
