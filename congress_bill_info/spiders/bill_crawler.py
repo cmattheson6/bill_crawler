@@ -39,20 +39,18 @@ def create_pol_dict(pol):
                 'state': pol_state}
     return pol_dict;
 def create_bill_dict(b): #inputs raw bill info
-    if b.count('to') > 0: 
-        bill_id = b[b.index("to")+1:len(b)].strip()
-        amdt_id = b[0:b.index("to")].replace(" ", "").replace(".", "")
-        bill_title = b
-        bill_sec_title = response.xpath(".//table[@class='standard01']/tr/td/text()").extract_first()
-        bill_title = bill_title + bill_sec_title
+    if b.count('-') > 0:
+        bill_id = b[0:b.index("-")].replace(" ", "").replace(".", "")
+        amdt_id = None
+        bill_title = b[b.index("-")+1:len(b)].strip()
         bill_dict = {'bill_id': bill_id,
                      'amdt_id': amdt_id,
                      'bill_title': bill_title}
         return bill_dict
-    else:
-        bill_id = b[0:b.index("-")].replace(" ", "").replace(".", "")
-        amdt_id = None
-        bill_title = b[b.index("-")+1:len(b)].strip()
+    else: 
+        bill_id = b[b.index("to")+1:len(b)].strip()
+        amdt_id = b[0:b.index("to")].replace(" ", "").replace(".", "")
+        bill_title = b
         bill_dict = {'bill_id': bill_id,
                      'amdt_id': amdt_id,
                      'bill_title': bill_title}
@@ -110,6 +108,9 @@ class BillCrawlerSpider(scrapy.Spider):
         bill_id = bill_info['bill_id']
         amdt_id = bill_info['amdt_id']
         bill_title = bill_info['bill_title']
+        
+        bill_sec_title = response.xpath(".//table[@class='standard01']/tr/td/text()").extract_first()
+        bill_title = bill_title + bill_sec_title
 
         # Get all sponsor info parsed from raw info
         sponsor_info = create_pol_dict(sponsor_info)
