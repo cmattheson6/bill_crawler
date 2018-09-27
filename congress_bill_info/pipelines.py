@@ -72,7 +72,7 @@ class CongressBillInfoPipeline(object):
                                   bill_title = str(item['bill_title']),
                                   bill_summary = str(item['bill_summary']),
                                   sponsor_fn = str(item['sponsor_fn']),
-                                  sponsor_ln = str(item['sponsor_ln'),
+                                  sponsor_ln = str(item['sponsor_ln']),
                                   sponsor_state = str(item['sponsor_state']),
                                   sponsor_party = str(item['sponsor_party']),
                                   bill_url = str(item['bill_url']))
