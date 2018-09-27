@@ -67,15 +67,15 @@ class CongressBillInfoPipeline(object):
                 data = data.encode('utf-8')
                 print("The topic was built!")
                 publisher.publish(topic_path, data=data,
-                                  bill_id = str(item['bill_id']),
-                                  amdt_id = str(item['amdt_id']),
-                                  bill_title = str(item['bill_title']),
-                                  bill_summary = str(['bill_summary']),
-                                  sponsor_fn = str(item['sponsor_fn']),
-                                  sponsor_ln = str(item['sponsor_ln']),
-                                  sponsor_state = str(item['sponsor_state']),
-                                  sponsor_party = str(item['sponsor_party']),
-                                  bill_url = str(item['bill_url']))
+                                  bill_id = item.setdefault('bill_id', ''),
+                                  amdt_id = item.setdefault('amdt_id', ''),
+                                  bill_title = item.setdefault('bill_title', ''),
+                                  bill_summary = item.setdefault('bill_summary', ''),
+                                  sponsor_fn = item.setdefault('sponsor_fn', ''),
+                                  sponsor_ln = item.setdefault('sponsor_ln', ''),
+                                  sponsor_state = item.setdefault('sponsor_state', ''),
+                                  sponsor_party = item.setdefault('sponsor_party', ''),
+                                  bill_url = item.setdefault('bill_url', ''))
                 print("We published! WOOOO!")
                 
                 return item
