@@ -11,152 +11,85 @@ handled accordingly:
 2)
 """
 ### -------- Import all necessary modules -------- ###
-import scrapy
 from google.cloud import pubsub
-from google.oauth2 import service_account
 import logging
+import pandas as pd
+from datetime import date
+import os
+import sys
+import unidecode
+from subprocess import Popen
+
+bill_file_dirname = '{0}/tmp/bill_info'.format(os.path.expanduser('~'))
+bill_file_path = bill_file_dirname + '/bill_info_{0}.csv'.format(date.today())
+rm_bill_files = 'rm {0}/*'.format(bill_file_dirname)
+bill_cmd = Popen(rm_bill_files, shell=True).stdout.read()
+print(bill_cmd)
+
+cs_file_dirname = '{0}/tmp/cosponsors'.format(os.path.expanduser('~'))
+cs_file_path = cs_file_dirname + '/cosponsors_{0}.csv'.format(date.today())
+rm_cs_files = 'rm {0}/*'.format(cs_file_dirname)
+cs_cmd = Popen(rm_cs_files, shell=True).stdout.read()
+print(cs_cmd)
 
 ### -------- Start of the pipeline -------- ###
 
 # This pipeline is only to uplaod the bill items
 class CongressBillInfoPipeline(object):
     # Uploads bill information to the database
+    f= open(bill_file_path, mode='a+')
+    lst = []
+    bill_info_keys = ['bill_id',
+                      'amdt_id'
+                      'bill_title',
+                      'bill_summary',
+                      'sponsor_fn',
+                      'sponsor_ln',
+                      'sponsor_party',
+                      'sponsor_state',
+                      'bill_url']
     def process_item(self, item, spider):
-        # item = (
-        #     item.setdefault('bill_id', None),
-        #     item.setdefault('bill_title', None),
-        #     item.setdefault('sponsor_fn', None),
-        #     item.setdefault('sponsor_ln', None),
-        #     item.setdefault('sponsor_party', None),
-        #     item.setdefault('sponsor_state', None),
-        #     item.setdefault('bill_url', None))
-        bill_info_keys = ['bill_id',
-                            'amdt_id'
-                            'bill_title',
-                            'bill_summary',
-                            'sponsor_fn',
-                            'sponsor_ln',
-                            'sponsor_party',
-                            'sponsor_state',
-                            'bill_url']
         # Filters out any cosponsor items and only uploads bill items.
-        if all([i in bill_info_keys for i in item.keys()]):
-            """We need to establish a an authorized connection to Google Cloud in order to upload to Google Pub/Sub.
-            In order to host the spiders on Github, the service account credentials are housed on the Scrapy platform
-            and dynamically created in the script."""
-            # Pull all of the credential info from the Scrapy platform into a dictionary.
-            cred_dict = {
-                         "auth_provider_x509_cert_url": spider.settings.get('auth_provider_x509_cert_url'),
-                         "auth_uri": spider.settings.get('auth_uri'),
-                         "client_email": spider.settings.get('client_email'),
-                         "client_id": spider.settings.get('client_id'),
-                         "client_x509_cert_url": spider.settings.get('client_x509_cert_url'),
-                         "private_key": spider.settings.get('private_key'),
-                         "private_key_id": spider.settings.get('private_key_id'),
-                         "project_id": spider.settings.get('project_id'),
-                         "token_uri": spider.settings.get('token_uri'),
-                         "type": spider.settings.get('account_type')
-                 }
-            logging.info('Credentials downloaded from Scrapy server.')
-            cred_dict['private_key'] = cred_dict['private_key'].replace('\\n', '\n')
-
-            # Build a Credentials object from the above dictionary. This will properly allow access as part of a
-            # Google Cloud Client.
-            credentials = service_account.Credentials.from_service_account_info(cred_dict)
-            logging.info('Credentials object created.')
-
-            # Create Publisher client.
-            publisher = pubsub.PublisherClient(credentials=credentials)
-            logging.info('Publisher Client created.')
-
-            # Set location of proper publisher topic
-            project_id = 'politics-data-tracker-1'
-            topic_name = 'bill_info'
-            topic_path = publisher.topic_path(project_id, topic_name)
-            data = u'This is a representative in the House.' #Consider how to better use this.
-            data = data.encode('utf-8')
-            publisher.publish(
-                topic_path,
-                data=data,
-                bill_id = item['bill_id'],
-                amdt_id = item['amdt_id'],
-                bill_title = item['bill_title'],
-                bill_summary = item['bill_summary'],
-                sponsor_fn = item['sponsor_fn'],
-                sponsor_ln = item['sponsor_ln'],
-                sponsor_state = item['sponsor_state'],
-                sponsor_party = item['sponsor_party'],
-                bill_url = item['bill_url'])
-            logging.info('Published item: {0}'.format(item))
-            yield item
-        # If not true, sends the item to the next pipeline as-is.
+        if all([i in self.bill_info_keys for i in item.keys()]):
+            item = {k: unidecode.unidecode(v) for (k, v) in item.items()}
+            self.lst.append(dict(item))
+            logging.info('Appended item: {0}'.format(item))
+            return item
         else:
-            yield item
-
+            return item
+    def close_spider(self, spider):
+        # send all scraped items to a CSV for processing by Dataflow
+        df = pd.DataFrame(self.lst, columns=self.bill_info_keys)
+        df.to_csv(bill_file_path)
+        logging.info('Created CSV at {0}'.format(bill_file_path))
+        self.f.close()
 # This pipeline is only to upload the bill cosponsors
 class BillCosponsorsPipeline(object):
-    
+    # Uploads bill information to the database
+    f= open(cs_file_path, mode='a+')
+    lst = []
+    cosponsor_keys = ['bill_id',
+                      'amdt_id',
+                      'cosponsor_fn',
+                      'cosponsor_ln',
+                      'cosponsor_party',
+                      'cosponsor_state']
     # Builds and uploads query
     def process_item(self, item, spider):
-        # cosponsor_packet = (item.setdefault('bill_id', None),
-        #                     item.setdefault('cosponsor_fn', None),
-        #                     item.setdefault('cosponsor_ln', None),
-        #                     item.setdefault('cosponsor_party', None),
-        #                     item.setdefault('cosponsor_state', None))
-        
         # Filters out all bill items
-        cosponsor_keys = ['bill_id',
-                          'amdt_id',
-                          'cosponsor_fn',
-                          'cosponsor_ln',
-                          'cosponsor_party',
-                          'cosponsor_state']
+
         # Filters out any cosponsor items and only uploads bill items.
-        if all([i in cosponsor_keys for i in item.keys()]):
-            # Pull all of the credential info from the Scrapy platform into a dictionary.
-            cred_dict = {
-                         "auth_provider_x509_cert_url": spider.settings.get('auth_provider_x509_cert_url'),
-                         "auth_uri": spider.settings.get('auth_uri'),
-                         "client_email": spider.settings.get('client_email'),
-                         "client_id": spider.settings.get('client_id'),
-                         "client_x509_cert_url": spider.settings.get('client_x509_cert_url'),
-                         "private_key": spider.settings.get('private_key'),
-                         "private_key_id": spider.settings.get('private_key_id'),
-                         "project_id": spider.settings.get('project_id'),
-                         "token_uri": spider.settings.get('token_uri'),
-                         "type": spider.settings.get('account_type')
-                 }
-            logging.info('Credentials downloaded from Scrapy server.')
-            cred_dict['private_key'] = cred_dict['private_key'].replace('\\n', '\n')
-
-            # Build a Credentials object from the above dictionary. This will properly allow access as part of a
-            # Google Cloud Client.
-            credentials = service_account.Credentials.from_service_account_info(cred_dict)
-            logging.info('Credentials object created.')
-
-            # Create Publisher client.
-            publisher = pubsub.PublisherClient(credentials=credentials)
-            logging.info('Publisher Client created.')
-
-            # Set location of proper publisher topic
-            project_id = 'politics-data-tracker-1'
-            topic_name = 'cosponsors'
-            topic_path = publisher.topic_path(project_id, topic_name)
-
-            #Figure out how to use this better.
-            data = u'This is the cosponsors related to bill {0}.'.format(item['bill_id'])
-            data = data.encode('utf-8')
-            publisher.publish(
-                topic_path,
-                data=data,
-                bill_id = item['bill_id'],
-                amdt_id = item['amdt_id'],
-                sponsor_fn = item['cosponsor_fn'],
-                sponsor_ln = item['cosponsor_ln'],
-                sponsor_state = item['cosponsor_state'],
-                sponsor_party = item['cosponsor_party'])
-            logging.info('Published item: {0}'.format(item))
-            yield item
+        if all([i in self.cosponsor_keys for i in item.keys()]):
+            item = {k: unidecode.unidecode(v) for (k, v) in item.items()}
+            self.lst.append(dict(item))
+            logging.info('Appended item: {0}'.format(item))
+            return item
         # If not true, sends the item to the next pipeline as-is.
         else:
-            yield item
+            return item
+    def close_spider(self, spider):
+        # send all scraped items to a CSV for processing by Dataflow
+        df = pd.DataFrame(self.lst, columns=self.cosponsor_keys)
+        df.to_csv(cs_file_path)
+        logging.info('Created CSV at {0}'.format(cs_file_path))
+        self.f.close()
